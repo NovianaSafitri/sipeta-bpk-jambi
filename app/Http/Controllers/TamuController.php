@@ -19,53 +19,53 @@ class TamuController extends Controller
         return view('form');
     }
 
-    // --- FUNGSI UNTUK MENAMPILKAN HALAMAN ADMIN ---
-    public function adminIndex() {
-        // Mengambil semua data tamu dan diurutkan dari yang terbaru (latest)
-        $daftarTamu = Guest::latest()->get();
+    // --- FUNGSI UNTUK MENAMPILKAN HALAMAN ADMIN (DENGAN FITUR REKAP/FILTER) ---
+    public function adminIndex(Request $request) {
+        $bulan = $request->get('bulan', date('m'));
+        $tahun = $request->get('tahun', date('Y'));
+
+        $daftarTamu = Guest::whereMonth('created_at', $bulan)
+                            ->whereYear('created_at', $tahun)
+                            ->latest()
+                            ->get();
         
-        // Mengirim data tamu ke view admin.blade.php
-        return view('admin', compact('daftarTamu'));
+        return view('admin', compact('daftarTamu', 'bulan', 'tahun'));
     }
 
     // --- FUNGSI UNTUK SIMPAN DATA DARI FORM TAMU ---
     public function store(Request $request) 
     {
-        // 1. Validasi data agar tidak ada yang kosong
+        // 1. Validasi: NIK dihapus, foto_tamu dibuat tidak wajib (nullable)
         $request->validate([
-            'nik' => 'required',
             'nama_lengkap' => 'required',
-            'no_whatsapp' => 'required',
-            'foto_tamu' => 'required', 
+            'no_whatsapp'  => 'required',
+            'asal_instansi'=> 'required',
+            'alamat'       => 'required',
+            'keperluan'    => 'required',
         ]);
 
-        // 2. Proses simpan ke database menggunakan Model Guest
+        // 2. Proses simpan: Menghapus kolom 'nik' agar tidak error saat query
         Guest::create([
-            'nik' => $request->nik,
-            'nama_lengkap' => $request->nama_lengkap,
-            'asal_instansi' => $request->asal_instansi,
-            'alamat' => $request->alamat,
-            'no_whatsapp' => $request->no_whatsapp,
-            'keperluan' => $request->keperluan,
+            'nama_lengkap'   => $request->nama_lengkap,
+            'asal_instansi'  => $request->asal_instansi,
+            'alamat'         => $request->alamat,
+            'no_whatsapp'    => $request->no_whatsapp,
+            'keperluan'      => $request->keperluan,
             'pegawai_tujuan' => $request->pegawai_tujuan,
-            'unit_kerja' => $request->unit_kerja,
-            'foto_tamu' => $request->foto_tamu, // Menyimpan string Base64 dari kamera
+            'unit_kerja'     => $request->unit_kerja,
+            'foto_tamu'      => $request->foto_tamu, // Tetap disimpan jika ada, null jika tidak ada
         ]);
 
-        // 3. Kembali ke halaman utama dengan pesan sukses
-        return redirect('/')->with('success', 'Data tamu dan foto berhasil dikirim ke BPK Jambi!');
+        // 3. Kembali ke halaman utama
+        return redirect('/')->with('success', 'Data tamu berhasil terkirim ke BPK Jambi!');
     }
 
-    // --- FUNGSI UNTUK MENGHAPUS DATA TAMU (TAMBAHAN BARU) ---
+    // --- FUNGSI UNTUK MENGHAPUS DATA TAMU ---
     public function destroy($id)
     {
-        // Mencari data tamu berdasarkan ID, jika tidak ketemu akan error 404
         $tamu = Guest::findOrFail($id);
-        
-        // Menghapus data dari database
         $tamu->delete();
 
-        // Kembali ke halaman admin dengan pesan sukses hapus
         return redirect()->back()->with('success', 'Data tamu berhasil dihapus dari sistem!');
     }
 }

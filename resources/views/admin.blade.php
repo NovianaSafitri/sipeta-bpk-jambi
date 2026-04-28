@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SIPETA Admin - BPK Jambi</title>
+    <title>SIDULUR Admin - BPK Jambi</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <style>
@@ -36,6 +36,8 @@
             margin-bottom: 10px; 
             padding: 12px 20px;
             transition: 0.3s;
+            font-size: 0.9rem;
+            font-weight: 500;
         }
         .nav-link:hover, .nav-link.active { 
             background: rgba(255,255,255,0.1); 
@@ -93,6 +95,15 @@
         
         .btn-action:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
 
+        /* Filter Section */
+        .filter-card {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.02);
+        }
+
         .badge-count { 
             background: var(--bpk-gold); 
             color: white;
@@ -101,6 +112,43 @@
             border-radius: 15px;
             box-shadow: 0 4px 15px rgba(197, 160, 42, 0.3);
         }
+
+        /* --- KODE PERBAIKAN CETAK (PRINT) --- */
+        @media print {
+            .sidebar, .filter-card, .btn-action, .badge-count, .alert, .bi-printer-fill {
+                display: none !important;
+            }
+            .main-content {
+                margin-left: 0 !important;
+                padding: 0 !important;
+                width: 100% !important;
+            }
+            body {
+                background-color: white !important;
+            }
+            .card-table {
+                box-shadow: none !important;
+                border: 1px solid #000 !important;
+                border-radius: 0 !important;
+            }
+            .table thead th {
+                background-color: #eee !important;
+                color: black !important;
+                border: 1px solid #000 !important;
+            }
+            .table tbody td {
+                border: 1px solid #000 !important;
+            }
+            /* Sembunyikan kolom AKSI saat diprint */
+            .table th:last-child, .table td:last-child {
+                display: none !important;
+            }
+            .img-tamu {
+                width: 50px !important;
+                height: 50px !important;
+                box-shadow: none !important;
+            }
+        }
     </style>
 </head>
 <body>
@@ -108,11 +156,14 @@
 <div class="sidebar d-none d-md-block shadow">
     <div class="text-center mb-4">
         <img src="{{ asset('images/logo-bpk.png') }}" width="60" class="mb-3">
-        <h4 class="fw-extrabold text-white">SIPETA <span style="color: var(--bpk-gold);">BPK</span></h4>
+        <h4 class="fw-extrabold text-white">SIDULUR <span style="color: var(--bpk-gold);">BPK</span></h4>
     </div>
     <ul class="nav flex-column">
         <li class="nav-item">
-            <a href="#" class="nav-link active"><i class="bi bi-grid-1x2-fill me-3"></i> DASHBOARD</a>
+            <a href="{{ route('admin.index') }}" class="nav-link active"><i class="bi bi-grid-1x2-fill me-3"></i> DASHBOARD</a>
+        </li>
+        <li class="nav-item">
+            <a href="#rekapSection" class="nav-link"><i class="bi bi-file-earmark-bar-graph-fill me-3"></i> REKAP BULANAN</a>
         </li>
         <li class="nav-item">
             <a href="/" class="nav-link"><i class="bi bi-file-earmark-text-fill me-3"></i> LIHAT FORM</a>
@@ -123,17 +174,48 @@
 <div class="main-content">
     <div class="d-flex justify-content-between align-items-center mb-5">
         <div>
-            <h2 class="fw-bold mb-1 text-dark">Daftar Tamu Masuk</h2>
-            <p class="text-muted small mb-0">Monitor data kunjungan harian BPK Perwakilan Jambi</p>
+            <h2 class="fw-bold mb-1 text-dark">Manajemen Tamu</h2>
+            <p class="text-muted small mb-0">Monitor data kunjungan BPK Perwakilan Jambi</p>
         </div>
         <div class="d-flex align-items-center gap-3">
             @if(session('success'))
-                <div class="alert alert-success py-2 px-4 mb-0 small rounded-pill shadow-sm animate__animated animate__fadeInRight">
+                <div class="alert alert-success py-2 px-4 mb-0 small rounded-pill shadow-sm">
                     <i class="bi bi-check-circle-fill me-2"></i> {{ session('success') }}
                 </div>
             @endif
             <div class="badge-count">
-                <i class="bi bi-people-fill me-2"></i> {{ $daftarTamu->count() }} Tamu
+                <i class="bi bi-people-fill me-2"></i> {{ $daftarTamu->count() }} Tamu Terfilter
+            </div>
+        </div>
+    </div>
+
+    <div id="rekapSection" class="filter-card">
+        <div class="row align-items-center">
+            <div class="col-md-7">
+                <form action="{{ route('admin.index') }}" method="GET" class="d-flex gap-2">
+                    <select name="bulan" class="form-select border-0 bg-light rounded-pill px-3">
+                        @for($i=1; $i<=12; $i++)
+                            <option value="{{ $i }}" {{ $bulan == $i ? 'selected' : '' }}>
+                                {{ date('F', mktime(0, 0, 0, $i, 10)) }}
+                            </option>
+                        @endfor
+                    </select>
+
+                    <select name="tahun" class="form-select border-0 bg-light rounded-pill px-3">
+                        @for($y=date('Y'); $y>=2024; $y--)
+                            <option value="{{ $y }}" {{ $tahun == $y ? 'selected' : '' }}>
+                                {{ $y }}
+                            </option>
+                        @endfor
+                    </select>
+
+                    <button type="submit" class="btn btn-primary rounded-pill px-4 shadow-sm">Filter</button>
+                </form>
+            </div>
+            <div class="col-md-5 text-end">
+                <button onclick="window.print()" class="btn btn-dark rounded-pill px-4 shadow-sm">
+                    <i class="bi bi-printer-fill me-2"></i> Cetak Laporan PDF
+                </button>
             </div>
         </div>
     </div>
@@ -151,14 +233,14 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($daftarTamu as $tamu)
+                    @forelse($daftarTamu as $tamu)
                     <tr>
                         <td class="ps-4 py-3">
                             <div class="d-flex align-items-center">
                                 <img src="{{ $tamu->foto_tamu }}" class="img-tamu me-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#modalFoto{{ $tamu->id }}">
                                 <div>
                                     <div class="fw-bold text-dark">{{ $tamu->nama_lengkap }}</div>
-                                    <small class="text-muted" style="font-size: 0.75rem;">NIK: {{ $tamu->nik }}</small>
+
                                 </div>
                             </div>
                         </td>
@@ -187,7 +269,13 @@
                             </div>
                         </td>
                     </tr>
-                    @endforeach
+                    @empty
+                    <tr>
+                        <td colspan="5" class="text-center py-5 text-muted">
+                            <i class="bi bi-info-circle me-2"></i> Tidak ada data tamu untuk periode ini.
+                        </td>
+                    </tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>
@@ -220,7 +308,6 @@
                         </div>
                         <div class="col-md-7">
                             <table class="table table-sm table-borderless mt-2">
-                                <tr><th width="40%" class="text-muted">NIK</th><td>: {{ $tamu->nik }}</td></tr>
                                 <tr><th class="text-muted">NAMA LENGKAP</th><td>: <strong class="text-capitalize text-dark">{{ $tamu->nama_lengkap }}</strong></td></tr>
                                 <tr><th class="text-muted">INSTANSI</th><td>: {{ $tamu->asal_instansi }}</td></tr>
                                 <tr>
